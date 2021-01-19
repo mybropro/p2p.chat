@@ -11,7 +11,12 @@ import InvalidRoom from '../components/invalid-room'
 import RequestPerms from '../components/request-perms'
 import SetNickname from '../components/set-nickname'
 
-const SIGNALHUB = 'https://signalhub.p2p.chat'
+//locally hosted signalhub
+//no https. Need cert for signalhub and webpage
+//const SIGNALHUB = 'http://127.0.0.1:80'
+//const SIGNALHUB = 'https://signalhub.vercel.app/api/bin.js'
+
+const SIGNALHUB= 'https://signalhub.p2p.chat'
 
 export default class Chat extends React.Component {
 
@@ -23,7 +28,12 @@ export default class Chat extends React.Component {
     let invalidRoom = false
 
     try {
-      roomName = decodeRoom(props.roomCode)
+      if(props.roomCode==="main/main"){
+        //open, easy room
+        roomName = "main"
+      } else{
+        roomName = decodeRoom(props.roomCode)
+      }
     } catch(e) {
       invalidRoom = true
     }
@@ -67,6 +77,7 @@ export default class Chat extends React.Component {
     const {myUuid, myStream} = this.state
     const {roomCode} = this.props
 
+    //new signal hub client for each room
     const hub = signalhub(roomCode, [SIGNALHUB])
 
     hub.subscribe('all').on('data', this.handleHubData.bind(this))
@@ -129,7 +140,7 @@ export default class Chat extends React.Component {
             delete newPeerStreams[message.from]
             this.setState({peerStreams: newPeerStreams})
           }
-        }, 20000)
+        }, 30000)
 
       }
 

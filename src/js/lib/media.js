@@ -42,3 +42,20 @@ export default async function getMyStream() {
     }
   }
 }
+
+export async function getMyScreen() {
+  var displayMediaOptions = {
+    video: {
+      cursor: "always"
+    },
+    audio: false
+  };
+  try {
+    const screenStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+    dumpOptionsInfo();
+    return {myScreen: screenStream, screenEnabled: true};
+  } catch(err) {
+    console.error("Error: " + err);
+    return {myScreen: null, screenEnabled: true};
+  } 
+}

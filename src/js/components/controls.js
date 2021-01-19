@@ -1,6 +1,6 @@
 import React from 'react'
 import classNames from 'classnames'
-import {Mic, MicOff, X, Video, VideoOff} from 'react-feather';
+import {Mic, MicOff, X, Video, VideoOff, Monitor} from 'react-feather';
 
 export default class Controls extends React.Component {
 
@@ -46,8 +46,8 @@ export default class Controls extends React.Component {
   render() {
 
     const {
-      audioOn, videoOn, audioEnabled, videoEnabled, handleHangUp,
-      handleVideoToggle, handleAudioToggle
+      audioOn, videoOn, screenOn, audioEnabled, videoEnabled, screenEnabled,
+      handleHangUp,handleVideoToggle, handleAudioToggle
     } = this.props
     const {showControls} = this.state
 
@@ -57,10 +57,16 @@ export default class Controls extends React.Component {
     const audioClassNames = classNames('button-primary control', {
       on: audioOn
     })
+    const screenClassNames = classNames('button-primary control', {
+      on: true
+    })
     const controlsClassNames = classNames({shown: showControls})
 
     return (
       <div id='controls' className={controlsClassNames}>
+        <button className={screenClassNames}> 
+          <Monitor />
+        </button>
         <button className={videoClassNames} onClick={handleVideoToggle} disabled={!videoEnabled}>
           { videoOn && videoEnabled ? <Video /> : <VideoOff /> }
         </button>

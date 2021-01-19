@@ -24,11 +24,16 @@ export default class CreateRoom extends React.Component {
   onCreateRoom(text) {
 
     const {onCreateRoom} = this.props
-
-    const roomName = this.cleanSlug(text)
-
-    const roomCode = encodeRoom(roomName)
-
+    let roomCode = "" 
+    if(text !== "main"){
+      const roomName = this.cleanSlug(text)
+      console.log("roomName:"+roomName)
+      roomCode = encodeRoom(roomName)
+      console.log("roomCode:"+roomCode)
+    } else{
+      roomCode = text+"/main"
+    }
+    //this is not recursive. this 'onCreateRoom' is the prop function 
     onCreateRoom(roomCode)
 
   }
@@ -71,6 +76,13 @@ export default class CreateRoom extends React.Component {
             className='button-primary'
           >
             Create Room
+          </button>
+          <button
+            type='button'
+            onClick={event =>  window.location.href='/main/main'}
+            className='button-primary'
+          >
+          Main Chat Join
           </button>
         </form>
       </div>

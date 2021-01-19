@@ -4,10 +4,13 @@
 
   input {
     width: 24rem;
-    margin-right: 1rem;
   }
 
   button {
     vertical-align: top;
+  }
+
+  :not(:last-child){
+    margin-right: 1rem;
   }
 }

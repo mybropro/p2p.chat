@@ -51,11 +51,10 @@ export default class Home extends React.Component {
         route: '404'
       }
     }
-
+    console.log("going to route to "+this.state.route)
   }
 
   handleCreateRoom(roomCode) {
-
     // As we have no router, just do a full navigate - we'll pick up the room
     // from the url on load.
     window.location = `${window.location.origin}/${roomCode}?created=true`
@@ -68,7 +67,6 @@ export default class Home extends React.Component {
         <Header />
         <Hero />
         <CreateRoom onCreateRoom={this.handleCreateRoom.bind(this)} />
-        <Social />
         <HowItWorks />
         <Features />
         <Footer />

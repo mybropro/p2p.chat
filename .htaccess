@@ -1,0 +1,12 @@
+Options All -Indexes
+DirectoryIndex index.html
+
+RewriteEngine On
+
+#RewriteCond %{HTTP_HOST} ^chat\.savethereef\.net$
+#RewriteRule ^/?$ "https\:\/\/p2p\.chat\/uu5n5Z18XxDG\/longdistance\-gf\-chat" [R=301,L]
+
+RewriteRule ^index\.html - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.html [L]

@@ -10,7 +10,7 @@ export default (props) => {
     <div id='chat-header'>
       <a id='brand' href='/'>
         <Share2 id='brand-logo' />
-        <span id='brand-text'>p2p.chat</span>
+        <span id='brand-text'>chat.savethereef.net</span>
       </a>
       {roomName ? <span id='room-name'>{roomName}</span> : null}
       {roomName ? <CopyLink /> : null}
