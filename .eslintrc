@@ -1,6 +1,3 @@
 {
-  "extends": [
-    "eslint-config-tomjwatson",
-    "plugin:react/recommended"
-  ]
+  "extends": ["eslint-config-tomjwatson", "plugin:react/recommended"]
 }

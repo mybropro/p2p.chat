@@ -6,7 +6,8 @@
   "scripts": {
     "start": "./node_modules/.bin/webpack-dev-server --config webpack.config.js --port 3002 --host 0.0.0.0 --hot --inline --history-api-fallback",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "bundle": "NODE_ENV=production ./node_modules/.bin/webpack --config webpack.config.js"
+    "bundle": "NODE_ENV=production ./node_modules/.bin/webpack --config webpack.config.js",
+    "prettier": "npx prettier --write ."
   },
   "author": "Tom Watson <tom@tomjwatson.com>",
   "license": "MIT",
@@ -50,6 +51,7 @@
     "fscreen": "^1.1.0",
     "html-to-react": "^1.4.5",
     "media-recorder-stream": "^2.1.1",
+    "prettier": "^2.2.1",
     "query-string": "^6.0.0",
     "react-addons-shallow-compare": "^15.6.2",
     "react-feather": "^1.1.0",

@@ -1,45 +1,43 @@
-import React from 'react'
-import swarm from 'webrtc-swarm'
-import uuidv4 from 'uuid/v4'
-import signalhub from 'signalhub'
-import {decodeRoom} from '../lib/room-encoding'
-import getMyStream from '../lib/media'
-import Controls from '../components/controls'
-import Header from '../components/header'
-import MyStream from '../components/my-stream'
-import PeerStreams from '../components/peer-streams'
-import InvalidRoom from '../components/invalid-room'
-import RequestPerms from '../components/request-perms'
-import SetNickname from '../components/set-nickname'
-import TextChat from '../components/text-chat'
+import React from "react";
+import swarm from "webrtc-swarm";
+import uuidv4 from "uuid/v4";
+import signalhub from "signalhub";
+import { decodeRoom } from "../lib/room-encoding";
+import getMyStream from "../lib/media";
+import Controls from "../components/controls";
+import Header from "../components/header";
+import MyStream from "../components/my-stream";
+import PeerStreams from "../components/peer-streams";
+import InvalidRoom from "../components/invalid-room";
+import RequestPerms from "../components/request-perms";
+import SetNickname from "../components/set-nickname";
+import TextChat from "../components/text-chat";
 
-const SIGNALHUB= 'https://signalhub.p2p.chat'
+const SIGNALHUB = "https://signalhub.p2p.chat";
 
 export default class Chat extends React.Component {
-
   constructor(props) {
+    super(props);
 
-    super(props)
-
-    let roomName
-    let invalidRoom = false
+    let roomName;
+    let invalidRoom = false;
 
     try {
-      if(props.roomCode==="main/main"){
+      if (props.roomCode === "main/main") {
         //open, easy room
-        roomName = "main"
-      } else{
-        roomName = decodeRoom(props.roomCode)
+        roomName = "main";
+      } else {
+        roomName = decodeRoom(props.roomCode);
       }
-    } catch(e) {
-      invalidRoom = true
+    } catch (e) {
+      invalidRoom = true;
     }
 
     this.state = {
       roomName,
       invalidRoom,
       peerStreams: {},
-      chatMessages:[],
+      chatMessages: [],
       swarmInitialized: false,
       myUuid: uuidv4(),
       audioOn: true,
@@ -47,274 +45,287 @@ export default class Chat extends React.Component {
       audioEnabled: true,
       videoEnabled: true,
       inFullscreen: false,
-    }
+    };
 
-    window.addEventListener('resize', this.forceUpdate.bind(this, () => {}))
-
+    window.addEventListener(
+      "resize",
+      this.forceUpdate.bind(this, () => {})
+    );
   }
-  
 
   async handleRequestPerms() {
-
-    const {myStream, audioEnabled, videoEnabled} = await getMyStream()
-    console.log({audioEnabled, videoEnabled})
-    this.setState({initialized: true, myStream, audioEnabled, videoEnabled})
-
+    const { myStream, audioEnabled, videoEnabled } = await getMyStream();
+    console.log({ audioEnabled, videoEnabled });
+    this.setState({ initialized: true, myStream, audioEnabled, videoEnabled });
   }
 
   async handleSetNickname(nickname) {
-
     this.setState({
-      nickname
-    })
+      nickname,
+    });
 
-    this.connectToSwarm(nickname)
-
+    this.connectToSwarm(nickname);
   }
 
   connectToSwarm(nickname) {
-
-    const {myUuid, myStream} = this.state
-    const {roomCode} = this.props
+    const { myUuid, myStream } = this.state;
+    const { roomCode } = this.props;
 
     //new signal hub client for each room
-    const hub = signalhub(roomCode, [SIGNALHUB])
+    const hub = signalhub(roomCode, [SIGNALHUB]);
 
-    hub.subscribe('all').on('data', this.handleHubData.bind(this))
+    hub.subscribe("all").on("data", this.handleHubData.bind(this));
 
-    const sw = swarm(
-      hub,
-      {
-        config: { iceServers: [ { urls: 'stun:stun.l.google.com:19302' } ] },
-        uuid: myUuid,
-        wrap: (outgoingSignalingData, destinationSignalhubChannel) => {
-          outgoingSignalingData.fromNickname = nickname
-          return outgoingSignalingData
-        },
-      }
-    )
+    const sw = swarm(hub, {
+      config: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] },
+      uuid: myUuid,
+      wrap: (outgoingSignalingData, destinationSignalhubChannel) => {
+        outgoingSignalingData.fromNickname = nickname;
+        return outgoingSignalingData;
+      },
+    });
 
-    sw.on('peer', this.handleConnect.bind(this))
+    sw.on("peer", this.handleConnect.bind(this));
 
-    sw.on('disconnect', this.handleDisconnect.bind(this))
+    sw.on("disconnect", this.handleDisconnect.bind(this));
 
     // Send initial connect signal
-    hub.broadcast(
-      roomCode,
-      {
-        type: 'connect',
-        from: myUuid,
-        fromNickname: nickname
-      }
-    )
-
+    hub.broadcast(roomCode, {
+      type: "connect",
+      from: myUuid,
+      fromNickname: nickname,
+    });
   }
 
   handleHubData(message) {
-
-    const {swarmInitialized, myUuid, peerStreams} = this.state
+    const { swarmInitialized, myUuid, peerStreams } = this.state;
 
     if (!swarmInitialized) {
-      this.setState({swarmInitialized: true})
+      this.setState({ swarmInitialized: true });
     }
 
-    if (message.type === 'connect' && message.from !== myUuid) {
-
+    if (message.type === "connect" && message.from !== myUuid) {
       if (!peerStreams[message.from]) {
-
-        console.info('connecting to', {uuid: message.from, nickname: message.fromNickname})
+        console.info("connecting to", {
+          uuid: message.from,
+          nickname: message.fromNickname,
+        });
 
         // Add the peer to the peerStreams with just his nickname so we can
         // show a placeholder whilst the peers finish handshaking
-        const newPeerStreams = Object.assign({}, peerStreams)
-        newPeerStreams[message.from] = {nickname: message.fromNickname}
-        this.setState({peerStreams: newPeerStreams})
+        const newPeerStreams = Object.assign({}, peerStreams);
+        newPeerStreams[message.from] = { nickname: message.fromNickname };
+        this.setState({ peerStreams: newPeerStreams });
 
         // If the peers never successfully finish handshaking and share
         // streams, clear up the peer
         setTimeout(() => {
-          const {peerStreams} = this.state
+          const { peerStreams } = this.state;
 
-          if (peerStreams[message.from] && !peerStreams[message.from].connected) {
-            const newPeerStreams = Object.assign({}, peerStreams)
-            delete newPeerStreams[message.from]
-            this.setState({peerStreams: newPeerStreams})
+          if (
+            peerStreams[message.from] &&
+            !peerStreams[message.from].connected
+          ) {
+            const newPeerStreams = Object.assign({}, peerStreams);
+            delete newPeerStreams[message.from];
+            this.setState({ peerStreams: newPeerStreams });
           }
-        }, 30000)
-
+        }, 30000);
       }
-
     }
-
   }
 
   handleConnect(peer, id) {
+    const { nickname } = this.state;
 
-    const {nickname} = this.state
+    console.info("connected to a new peer:", { id, peer });
 
-    console.info('connected to a new peer:', {id, peer})
-
-    const peerStreams = Object.assign({}, this.state.peerStreams)
+    const peerStreams = Object.assign({}, this.state.peerStreams);
     const pkg = {
       peer,
       audioOn: true,
       videoOn: true,
-    }
-    peerStreams[id] = Object.assign({}, peerStreams[id], pkg)
-    this.setState({peerStreams})
+    };
+    peerStreams[id] = Object.assign({}, peerStreams[id], pkg);
+    this.setState({ peerStreams });
 
-    peer.on('stream', (stream) => {
-      const peerStreams = Object.assign({}, this.state.peerStreams)
-      console.info('received stream', stream)
-      peerStreams[id].stream = stream
-      this.setState({peerStreams})
-    })
+    peer.on("stream", (stream) => {
+      const peerStreams = Object.assign({}, this.state.peerStreams);
+      console.info("received stream", stream);
+      peerStreams[id].stream = stream;
+      this.setState({ peerStreams });
+    });
 
-    peer.on('data', (payload) => {
+    peer.on("data", (payload) => {
+      const {
+        myStream,
+        audioOn,
+        videoOn,
+        audioEnabled,
+        videoEnabled,
+      } = this.state;
 
-      const {myStream, audioOn, videoOn, audioEnabled, videoEnabled} = this.state
+      const data = JSON.parse(payload.toString());
 
-      const data = JSON.parse(payload.toString())
+      console.info("received data", { id, data });
 
-      console.info('received data', {id, data})
-
-      if (data.type === 'receivedHandshake') {
+      if (data.type === "receivedHandshake") {
         if (myStream) {
-          peer.addStream(myStream)
+          peer.addStream(myStream);
         }
         if (!audioOn || !audioEnabled) {
-          peer.send(JSON.stringify({type: 'audioToggle', enabled: false}))
+          peer.send(JSON.stringify({ type: "audioToggle", enabled: false }));
         }
         if (!videoOn || !videoEnabled) {
-          peer.send(JSON.stringify({type: 'videoToggle', enabled: false}))
+          peer.send(JSON.stringify({ type: "videoToggle", enabled: false }));
         }
       }
 
-      if (data.type === 'sendHandshake') {
-        const peerStreams = Object.assign({}, this.state.peerStreams)
-        peerStreams[id].nickname = data.nickname
-        peerStreams[id].connected = true
-        peer.send(JSON.stringify({type: 'receivedHandshake'}))
-        this.setState({peerStreams})
+      if (data.type === "sendHandshake") {
+        const peerStreams = Object.assign({}, this.state.peerStreams);
+        peerStreams[id].nickname = data.nickname;
+        peerStreams[id].connected = true;
+        peer.send(JSON.stringify({ type: "receivedHandshake" }));
+        this.setState({ peerStreams });
       }
 
-      if (data.type === 'audioToggle') {
-        const peerStreams = Object.assign({}, this.state.peerStreams)
-        peerStreams[id].audioOn = data.enabled
-        this.setState({peerStreams})
+      if (data.type === "audioToggle") {
+        const peerStreams = Object.assign({}, this.state.peerStreams);
+        peerStreams[id].audioOn = data.enabled;
+        this.setState({ peerStreams });
       }
 
-      if (data.type === 'videoToggle') {
-        const peerStreams = Object.assign({}, this.state.peerStreams)
-        peerStreams[id].videoOn = data.enabled
-        this.setState({peerStreams})
+      if (data.type === "videoToggle") {
+        const peerStreams = Object.assign({}, this.state.peerStreams);
+        peerStreams[id].videoOn = data.enabled;
+        this.setState({ peerStreams });
       }
 
-      if (data.type === 'chat') {
-        const peerStreams = Object.assign({}, this.state.peerStreams)
-        console.log("recieved chat: "+data.message)
-        this.state.chatMessages.push({sendTime:data.sendTime, sender: data.sender, msg:data.msg});
+      if (data.type === "chat") {
+        const peerStreams = Object.assign({}, this.state.peerStreams);
+        this.state.chatMessages.push({
+          sendTime: data.sendTime,
+          sender: data.sender,
+          msg: data.msg,
+        });
         this.forceUpdate();
       }
-    })
+    });
 
-    peer.send(JSON.stringify({
-      type: 'sendHandshake',
-      nickname,
-    }))
-
+    peer.send(
+      JSON.stringify({
+        type: "sendHandshake",
+        nickname,
+      })
+    );
   }
 
   handleDisconnect(peer, id) {
+    console.info("disconnected from a peer:", id);
 
-    console.info('disconnected from a peer:', id)
-
-    const peerStreams = Object.assign({}, this.state.peerStreams)
+    const peerStreams = Object.assign({}, this.state.peerStreams);
 
     if (peerStreams[id] && peerStreams[id].stream) {
-      delete peerStreams[id]
-      this.setState({peerStreams})
+      delete peerStreams[id];
+      this.setState({ peerStreams });
     }
-
   }
 
   handleVideoToggle() {
+    const { peerStreams, myStream, videoOn } = this.state;
 
-    const {peerStreams, myStream, videoOn} = this.state
-
-    myStream.getVideoTracks()[0].enabled = !videoOn
+    myStream.getVideoTracks()[0].enabled = !videoOn;
 
     for (const id of Object.keys(peerStreams)) {
-      const peerStream = peerStreams[id]
+      const peerStream = peerStreams[id];
       if (peerStream.connected) {
-        peerStream.peer.send(JSON.stringify({type: 'videoToggle', enabled: !videoOn}))
+        peerStream.peer.send(
+          JSON.stringify({ type: "videoToggle", enabled: !videoOn })
+        );
       }
     }
 
     this.setState({
-      videoOn: !videoOn
-    })
-
+      videoOn: !videoOn,
+    });
   }
 
   handleAudioToggle() {
+    const { peerStreams, myStream, audioOn } = this.state;
 
-    const {peerStreams, myStream, audioOn} = this.state
-
-    myStream.getAudioTracks()[0].enabled = !audioOn
+    myStream.getAudioTracks()[0].enabled = !audioOn;
 
     for (const id of Object.keys(peerStreams)) {
-      const peerStream = peerStreams[id]
+      const peerStream = peerStreams[id];
       if (peerStream.connected) {
-        peerStream.peer.send(JSON.stringify({type: 'audioToggle', enabled: !audioOn}))
+        peerStream.peer.send(
+          JSON.stringify({ type: "audioToggle", enabled: !audioOn })
+        );
       }
     }
 
     this.setState({
-      audioOn: !audioOn
-    })
-
+      audioOn: !audioOn,
+    });
   }
 
-  handleTextChat(messageContent){
-    var currTime =Date.now();
+  handleTextChat(messageContent) {
+    var currTime = Date.now();
     console.log("attempting to send chat");
-    const {peerStreams, nickname} = this.state
+    const { peerStreams, nickname } = this.state;
     for (const id of Object.keys(peerStreams)) {
-      const peerStream = peerStreams[id]
+      const peerStream = peerStreams[id];
       if (peerStream.connected) {
-        peerStream.peer.send(JSON.stringify({type: 'chat', sendTime:currTime, sender: nickname, msg: messageContent}))
+        peerStream.peer.send(
+          JSON.stringify({
+            type: "chat",
+            sendTime: currTime,
+            sender: nickname,
+            msg: messageContent,
+          })
+        );
       }
     }
-    this.state.chatMessages.push({sendTime:currTime, sender: nickname, msg:messageContent});
+    this.state.chatMessages.push({
+      sendTime: currTime,
+      sender: nickname,
+      msg: messageContent,
+    });
     this.forceUpdate();
   }
 
   handleHangUp() {
-
-    window.location = `${window.location.origin}/goodbye`
-
+    window.location = `${window.location.origin}/goodbye`;
   }
 
-  handleMaximizeToggle(){
-     if (this.state.inFullscreen) {
+  handleMaximizeToggle() {
+    if (this.state.inFullscreen) {
       fscreen.exitFullscreen();
     } else {
       fscreen.requestFullscreen(this.appElement);
     }
   }
   render() {
-
-    const {created} = this.props
+    const { created } = this.props;
     const {
-      nickname, invalidRoom, roomName, initialized, myStream, swarmInitialized, peerStreams,
-      audioOn, videoOn, audioEnabled, videoEnabled, noStream,
+      nickname,
+      invalidRoom,
+      roomName,
+      initialized,
+      myStream,
+      swarmInitialized,
+      peerStreams,
+      audioOn,
+      videoOn,
+      audioEnabled,
+      videoEnabled,
+      noStream,
       inFullscreen,
-      chatMessages
-    } = this.state
+      chatMessages,
+    } = this.state;
 
     if (invalidRoom) {
-      return <InvalidRoom />
+      return <InvalidRoom />;
     }
 
     if (!initialized) {
@@ -325,49 +336,24 @@ export default class Chat extends React.Component {
           noStream={noStream}
           onRequestPerms={this.handleRequestPerms.bind(this)}
         />
-      )
+      );
     }
 
-    const awaitingPeers = Object.keys(peerStreams).length === 0
+    const awaitingPeers = Object.keys(peerStreams).length === 0;
     return (
-      <div id='chat'>
-        {
-          !initialized && !nickname ? (
-            <RequestPerms
-              roomName={roomName}
-              created={created}
-              onRequestPerms={this.handleRequestPerms.bind(this)}
-            />
-          ) : null
-        }
-        {
-          initialized && nickname ? (
-            <Header roomName={roomName} />
-          ) : null
-        }
-        <div id='sidebar'>
-        {
-            initialized ? (
-              <MyStream
-                className="row"
-                stream={myStream}
-                audioOn={audioOn}
-                videoOn={videoOn}
-                audioEnabled={audioEnabled}
-                videoEnabled={videoEnabled}
-                inFullscreen={inFullscreen}
-                handleAudioToggle={this.handleAudioToggle.bind(this)}
-                handleVideoToggle={this.handleVideoToggle.bind(this)}
-                handleTextChat={this.handleTextChat.bind(this)}
-                handleHangUp={this.handleHangUp.bind(this)}
-                handleMaximizeToggle={this.handleMaximizeToggle.bind(this)}
-                expanded={!swarmInitialized || awaitingPeers}
-              />
-            ) : null
-          }
-          {
-            initialized ? (
-              <Controls 
+      <div id="chat">
+        {!initialized && !nickname ? (
+          <RequestPerms
+            roomName={roomName}
+            created={created}
+            onRequestPerms={this.handleRequestPerms.bind(this)}
+          />
+        ) : null}
+        {initialized && nickname ? <Header roomName={roomName} /> : null}
+        <div id="sidebar">
+          {initialized ? (
+            <MyStream
+              className="row"
               stream={myStream}
               audioOn={audioOn}
               videoOn={videoOn}
@@ -379,44 +365,49 @@ export default class Chat extends React.Component {
               handleTextChat={this.handleTextChat.bind(this)}
               handleHangUp={this.handleHangUp.bind(this)}
               handleMaximizeToggle={this.handleMaximizeToggle.bind(this)}
-              />
-            ) : null
-            
-          }
-          {
-            initialized && nickname ?(
-              <TextChat
-                className='row'
-                handleTextChat={this.handleTextChat.bind(this)}
-                chatMessages={chatMessages}
-              />
-            ) : null
-          }
+              expanded={!swarmInitialized || awaitingPeers}
+            />
+          ) : null}
+          {initialized ? (
+            <Controls
+              stream={myStream}
+              audioOn={audioOn}
+              videoOn={videoOn}
+              audioEnabled={audioEnabled}
+              videoEnabled={videoEnabled}
+              inFullscreen={inFullscreen}
+              handleAudioToggle={this.handleAudioToggle.bind(this)}
+              handleVideoToggle={this.handleVideoToggle.bind(this)}
+              handleTextChat={this.handleTextChat.bind(this)}
+              handleHangUp={this.handleHangUp.bind(this)}
+              handleMaximizeToggle={this.handleMaximizeToggle.bind(this)}
+            />
+          ) : null}
+          {initialized && nickname ? (
+            <TextChat
+              className="row"
+              handleTextChat={this.handleTextChat.bind(this)}
+              chatMessages={chatMessages}
+            />
+          ) : null}
         </div>
-        <div id='streamContent'>
-        {
-          initialized && !nickname ? (
+        <div id="streamContent">
+          {initialized && !nickname ? (
             <SetNickname
               roomName={roomName}
               created={created}
               onSetNickname={this.handleSetNickname.bind(this)}
             />
-          ) : null
-        }
-        {
-          initialized && nickname ? (
+          ) : null}
+          {initialized && nickname ? (
             <PeerStreams
               peerStreams={peerStreams}
               swarmInitialized={swarmInitialized}
               shrunk={!swarmInitialized || awaitingPeers}
             />
-          ) : null
-        }
+          ) : null}
         </div>
-        
       </div>
-    )
-
+    );
   }
-
 }

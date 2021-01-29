@@ -1,12 +1,16 @@
-import React from 'react'
-import { Twitter } from 'react-feather';
+import React from "react";
+import { Twitter } from "react-feather";
 
 export default (props) => {
-
   return (
-    <div id='social'>
+    <div id="social">
       <div>
-        <a className='button' id='tweet' href='http://twitter.com/share?url=https://p2p.chat&text=p2p.chat' target='_blank'>
+        <a
+          className="button"
+          id="tweet"
+          href="http://twitter.com/share?url=https://p2p.chat&text=p2p.chat"
+          target="_blank"
+        >
           <i />
           <span>Tweet</span>
         </a>
@@ -20,6 +24,5 @@ export default (props) => {
         />
       </div>
     </div>
-  )
-
-}
+  );
+};
