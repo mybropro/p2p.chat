@@ -84,6 +84,13 @@ export default class CreateRoom extends React.Component {
           >
           Main Chat Join
           </button>
+          <button
+            type='button'
+            onClick={event =>  window.location.href='https://savethereef.net/textchat'}
+            className='button-primary'
+          >
+          Text Chat
+          </button>
         </form>
       </div>
     )

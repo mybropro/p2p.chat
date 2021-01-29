@@ -4,17 +4,14 @@ import uuidv4 from 'uuid/v4'
 import signalhub from 'signalhub'
 import {decodeRoom} from '../lib/room-encoding'
 import getMyStream from '../lib/media'
+import Controls from '../components/controls'
 import Header from '../components/header'
 import MyStream from '../components/my-stream'
 import PeerStreams from '../components/peer-streams'
 import InvalidRoom from '../components/invalid-room'
 import RequestPerms from '../components/request-perms'
 import SetNickname from '../components/set-nickname'
-
-//locally hosted signalhub
-//no https. Need cert for signalhub and webpage
-//const SIGNALHUB = 'http://127.0.0.1:80'
-//const SIGNALHUB = 'https://signalhub.vercel.app/api/bin.js'
+import TextChat from '../components/text-chat'
 
 const SIGNALHUB= 'https://signalhub.p2p.chat'
 
@@ -42,17 +39,20 @@ export default class Chat extends React.Component {
       roomName,
       invalidRoom,
       peerStreams: {},
+      chatMessages:[],
       swarmInitialized: false,
       myUuid: uuidv4(),
       audioOn: true,
       videoOn: true,
       audioEnabled: true,
       videoEnabled: true,
+      inFullscreen: false,
     }
 
     window.addEventListener('resize', this.forceUpdate.bind(this, () => {}))
 
   }
+  
 
   async handleRequestPerms() {
 
@@ -210,6 +210,12 @@ export default class Chat extends React.Component {
         this.setState({peerStreams})
       }
 
+      if (data.type === 'chat') {
+        const peerStreams = Object.assign({}, this.state.peerStreams)
+        console.log("recieved chat: "+data.message)
+        this.state.chatMessages.push({sendTime:data.sendTime, sender: data.sender, msg:data.msg});
+        this.forceUpdate();
+      }
     })
 
     peer.send(JSON.stringify({
@@ -270,18 +276,41 @@ export default class Chat extends React.Component {
 
   }
 
+  handleTextChat(messageContent){
+    var currTime =Date.now();
+    console.log("attempting to send chat");
+    const {peerStreams, nickname} = this.state
+    for (const id of Object.keys(peerStreams)) {
+      const peerStream = peerStreams[id]
+      if (peerStream.connected) {
+        peerStream.peer.send(JSON.stringify({type: 'chat', sendTime:currTime, sender: nickname, msg: messageContent}))
+      }
+    }
+    this.state.chatMessages.push({sendTime:currTime, sender: nickname, msg:messageContent});
+    this.forceUpdate();
+  }
+
   handleHangUp() {
 
     window.location = `${window.location.origin}/goodbye`
 
   }
 
+  handleMaximizeToggle(){
+     if (this.state.inFullscreen) {
+      fscreen.exitFullscreen();
+    } else {
+      fscreen.requestFullscreen(this.appElement);
+    }
+  }
   render() {
 
     const {created} = this.props
     const {
       nickname, invalidRoom, roomName, initialized, myStream, swarmInitialized, peerStreams,
-      audioOn, videoOn, audioEnabled, videoEnabled, noStream
+      audioOn, videoOn, audioEnabled, videoEnabled, noStream,
+      inFullscreen,
+      chatMessages
     } = this.state
 
     if (invalidRoom) {
@@ -300,7 +329,6 @@ export default class Chat extends React.Component {
     }
 
     const awaitingPeers = Object.keys(peerStreams).length === 0
-
     return (
       <div id='chat'>
         {
@@ -313,17 +341,66 @@ export default class Chat extends React.Component {
           ) : null
         }
         {
+          initialized && nickname ? (
+            <Header roomName={roomName} />
+          ) : null
+        }
+        <div id='sidebar'>
+        {
+            initialized ? (
+              <MyStream
+                className="row"
+                stream={myStream}
+                audioOn={audioOn}
+                videoOn={videoOn}
+                audioEnabled={audioEnabled}
+                videoEnabled={videoEnabled}
+                inFullscreen={inFullscreen}
+                handleAudioToggle={this.handleAudioToggle.bind(this)}
+                handleVideoToggle={this.handleVideoToggle.bind(this)}
+                handleTextChat={this.handleTextChat.bind(this)}
+                handleHangUp={this.handleHangUp.bind(this)}
+                handleMaximizeToggle={this.handleMaximizeToggle.bind(this)}
+                expanded={!swarmInitialized || awaitingPeers}
+              />
+            ) : null
+          }
+          {
+            initialized ? (
+              <Controls 
+              stream={myStream}
+              audioOn={audioOn}
+              videoOn={videoOn}
+              audioEnabled={audioEnabled}
+              videoEnabled={videoEnabled}
+              inFullscreen={inFullscreen}
+              handleAudioToggle={this.handleAudioToggle.bind(this)}
+              handleVideoToggle={this.handleVideoToggle.bind(this)}
+              handleTextChat={this.handleTextChat.bind(this)}
+              handleHangUp={this.handleHangUp.bind(this)}
+              handleMaximizeToggle={this.handleMaximizeToggle.bind(this)}
+              />
+            ) : null
+            
+          }
+          {
+            initialized && nickname ?(
+              <TextChat
+                className='row'
+                handleTextChat={this.handleTextChat.bind(this)}
+                chatMessages={chatMessages}
+              />
+            ) : null
+          }
+        </div>
+        <div id='streamContent'>
+        {
           initialized && !nickname ? (
             <SetNickname
               roomName={roomName}
               created={created}
               onSetNickname={this.handleSetNickname.bind(this)}
             />
-          ) : null
-        }
-        {
-          initialized && nickname ? (
-            <Header roomName={roomName} />
           ) : null
         }
         {
@@ -335,21 +412,8 @@ export default class Chat extends React.Component {
             />
           ) : null
         }
-        {
-          initialized ? (
-            <MyStream
-              stream={myStream}
-              audioOn={audioOn}
-              videoOn={videoOn}
-              audioEnabled={audioEnabled}
-              videoEnabled={videoEnabled}
-              handleAudioToggle={this.handleAudioToggle.bind(this)}
-              handleVideoToggle={this.handleVideoToggle.bind(this)}
-              handleHangUp={this.handleHangUp.bind(this)}
-              expanded={!swarmInitialized || awaitingPeers}
-            />
-          ) : null
-        }
+        </div>
+        
       </div>
     )
 
