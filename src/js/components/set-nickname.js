@@ -5,9 +5,8 @@ export default class SetNickname extends React.Component {
   constructor(props) {
     super(props);
 
+    var savedNickname = this.getCookie("nickname");
 
-    var savedNickname = this.getCookie("nickname")
-    
     this.state = {
       nickname: savedNickname ? savedNickname : "",
     };
@@ -45,14 +44,13 @@ export default class SetNickname extends React.Component {
 
   onSetNickname() {
     const { onSetNickname } = this.props;
-    const {  nickname, saveName } = this.state;
+    const { nickname, saveName } = this.state;
 
     var formatName = nickname.replace(/\s\s+/g, " ");
     formatName = nickname.trim();
-    
-    if(saveName){
-      this.setCookie("nickname", formatName, 365);//save cookie for 365 days
-    
+
+    if (saveName) {
+      this.setCookie("nickname", formatName, 365); //save cookie for 365 days
     }
     onSetNickname(formatName);
   }
@@ -91,7 +89,8 @@ export default class SetNickname extends React.Component {
               name="saveName"
               value="yes"
               onChange={(evt) => this.onChange(evt)}
-            /> Save for future use
+            />{" "}
+            Save for future use
           </div>
           <div>
             <button type="submit" className="button-primary">

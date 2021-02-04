@@ -42,7 +42,7 @@ export default class TextChat extends React.Component {
 
   scrollToBottom() {
     //scroll messages window to bottom
-    this.el.scrollTop = this.el.scrollHeight
+    this.el.scrollTop = this.el.scrollHeight;
   }
 
   //modified from https://stackoverflow.com/questions/1500260/detect-urls-in-text-with-javascript
@@ -62,7 +62,12 @@ export default class TextChat extends React.Component {
 
     return (
       <div id="text-chat">
-        <div id="messages" ref={el => { this.el = el; }} >
+        <div
+          id="messages"
+          ref={(el) => {
+            this.el = el;
+          }}
+        >
           {this.props.chatMessages.map(function (item) {
             return (
               <div className="bla-bla-class" key={item.sendTime}>
@@ -79,7 +84,12 @@ export default class TextChat extends React.Component {
             value={this.state.value}
             onChange={this.handleChange}
           />
-          <button id="sendButton" className="button-primary" type="submit" title="Send Message">
+          <button
+            id="sendButton"
+            className="button-primary"
+            type="submit"
+            title="Send Message"
+          >
             <Send />
           </button>
         </form>
