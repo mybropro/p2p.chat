@@ -5,24 +5,56 @@ export default class SetNickname extends React.Component {
   constructor(props) {
     super(props);
 
+
+    var savedNickname = this.getCookie("nickname")
+    
     this.state = {
-      nickname: "",
+      nickname: savedNickname ? savedNickname : "",
     };
   }
 
+  getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(";");
+    for (var i = 0; i < ca.length; i++) {
+      var c = ca[i];
+      while (c.charAt(0) == " ") {
+        c = c.substring(1);
+      }
+      if (c.indexOf(name) == 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return "";
+  }
+
+  setCookie(cname, name, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
+    var expires = "expires=" + d.toUTCString();
+    document.cookie = cname + "=" + name + ";" + expires + ";path=/";
+  }
+
   onChange(evt) {
+    const value =
+      evt.target.type === "checkbox" ? evt.target.checked : evt.target.value;
     this.setState({
-      nickname: evt.target.value,
+      [evt.target.name]: value,
     });
   }
 
-  onSetNickname(nickname) {
+  onSetNickname() {
     const { onSetNickname } = this.props;
+    const {  nickname, saveName } = this.state;
 
-    nickname = nickname.replace(/\s\s+/g, " ");
-    nickname = nickname.trim();
-
-    onSetNickname(nickname);
+    var formatName = nickname.replace(/\s\s+/g, " ");
+    formatName = nickname.trim();
+    
+    if(saveName){
+      this.setCookie("nickname", formatName, 365);//save cookie for 365 days
+    
+    }
+    onSetNickname(formatName);
   }
 
   render() {
@@ -39,18 +71,27 @@ export default class SetNickname extends React.Component {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            this.onSetNickname(nickname);
+            this.onSetNickname();
           }}
         >
           <div>
             <input
               type="text"
+              name="nickname"
+              value={nickname}
               placeholder="e.g. tom"
-              value={this.state.roomValue}
               onChange={(evt) => this.onChange(evt)}
               required
               minLength="3"
             />
+          </div>
+          <div>
+            <input
+              type="checkbox"
+              name="saveName"
+              value="yes"
+              onChange={(evt) => this.onChange(evt)}
+            /> Save for future use
           </div>
           <div>
             <button type="submit" className="button-primary">
